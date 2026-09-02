@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aven Agent Troubleshooting Assistant</title>
+  <style>
+    :root {
+      --primary: #0F172A;
+      --accent: #2563EB;
+      --bg: #F8FAFC;
+      --card-bg: #FFFFFF;
+      --border: #E2E8F0;
+      --text: #1E293B;
+      --text-muted: #64748B;
+      --success: #16A34A;
+      --danger: #DC2626;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      padding: 24px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .container {
+      max-width: 950px;
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1.5fr 1fr;
+      gap: 20px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    h2 {
+      font-size: 1.2rem;
+      color: var(--primary);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-title {
+      font-weight: 600;
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+
+    .option-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .btn-option {
+      flex: 1;
+      min-width: 120px;
+      padding: 10px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      text-align: center;
+    }
+
+    .btn-option:hover {
+      border-color: var(--accent);
+    }
+
+    .btn-option.active {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+    }
+
+    .step-card {
+      border-left: 3px solid var(--accent);
+      background: #F1F5F9;
+      padding: 12px 16px;
+      border-radius: 0 6px 6px 0;
+      margin-bottom: 12px;
+    }
+
+    .step-card.escalation-card {
+      border-left-color: var(--danger);
+      background: #FEF2F2;
+    }
+
+    .checkbox-container {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      cursor: pointer;
+    }
+
+    .checkbox-container input {
+      margin-top: 3px;
+      accent-color: var(--accent);
+      width: 16px;
+      height: 16px;
+    }
+
+    .checkbox-container input.escalate-check {
+      accent-color: var(--danger);
+    }
+
+    .step-text {
+      font-size: 0.95rem;
+      line-height: 1.4;
+    }
+
+    textarea {
+      width: 100%;
+      height: 270px;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--bg);
+      font-family: monospace;
+      font-size: 0.85rem;
+      resize: vertical;
+      color: var(--text);
+      margin-bottom: 12px;
+    }
+
+    .btn-copy {
+      width: 100%;
+      padding: 10px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 6px;
+    }
+
+    .btn-reset {
+      width: 100%;
+      padding: 8px;
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .btn-copy:hover { opacity: 0.9; }
+    .btn-reset:hover { background: #F1F5F9; color: var(--text); }
+
+    .status-msg {
+      font-size: 0.8rem;
+      color: var(--success);
+      text-align: center;
+      margin-top: 6px;
+      height: 16px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="card">
+    <h2>Aven Issue Workflows</h2>
+    
+    <div class="section-title">1. Primary Issue Reported</div>
+    <div class="option-group">
+      <button class="btn-option active" id="btn-login" onclick="selectIssue('login')">Unable to Log In</button>
+      <button class="btn-option" id="btn-card" onclick="selectIssue('card')">Card Issue</button>
+      <button class="btn-option" id="btn-declined" onclick="selectIssue('declined')">Declined Transactions</button>
+    </div>
+
+    <div id="platform-section">
+      <div class="section-title">2. Access Platform</div>
+      <div class="option-group">
+        <button class="btn-option" id="btn-app" onclick="selectPlatform('app')">Aven App</button>
+        <button class="btn-option" id="btn-web" onclick="selectPlatform('web')">Aven Website</button>
+      </div>
+    </div>
+
+    <div id="troubleshooting-steps">
+      <div class="section-title">3. Troubleshooting Action Items</div>
+      <div id="steps-container">
+        <p style="color: var(--text-muted); font-size: 0.9rem;">Select a platform above to view recommended troubleshooting steps.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Ticket Summary</h2>
+    <div class="section-title">Generated Documentation</div>
+    <textarea id="ticket-notes" readonly></textarea>
+    <button class="btn-copy" onclick="copyNotes()">Copy Notes to Ticket</button>
+    <button class="btn-reset" onclick="resetForm()">Clear & Start New Ticket</button>
+    <div class="status-msg" id="copy-status"></div>
+  </div>
+</div>
+
+<script>
+  let currentState = {
+    issue: 'login',
+    platform: null,
+    steps: {},
+    escalated: false
+  };
+
+  const workflows = {
+    login: {
+      app: [
+        { id: 'phone_num', label: 'Verify Phone Number', detail: 'Confirm registered phone number linked to the account.' },
+        { id: 'reinstall', label: 'Reinstall App', detail: 'Instruct CH to uninstall, re-download, and log back into the Aven app.' },
+        { id: 'network', label: 'Network Check', detail: 'Switch from Wi-Fi to Mobile Data (or vice versa).' },
+        { id: 'os_update', label: 'Device OS Check', detail: 'Ensure phone operating system and Aven app are updated to latest versions.' },
+        { id: 'fraud_flag', label: 'Check Retool Fraud Flag', detail: 'Check if Fraud Flag exists on the OG Retool Tab.' }
+      ],
+      web: [
+        { id: 'browser_check', label: 'Browser Isolation', detail: 'Try accessing via an Incognito/Private window or alternative browser.' },
+        { id: 'cache_clear', label: 'Clear Cache & Cookies', detail: 'Clear browser history and refresh login page.' },
+        { id: 'verify_credentials', label: 'Credential Audit', detail: 'Verify mobile number / 2FA verification code delivery.' },
+        { id: 'fraud_flag_web', label: 'Check Retool Fraud Flag', detail: 'Check if Fraud Flag exists on the OG Retool Tab.' }
+      ]
+    },
+    card: {
+      app: [
+        { id: 'activation_exceeded', label: 'Activation Attempts Exceeded', detail: 'Verify card details (last 4 digits/expiry) with CH and perform an internal activation reset.' },
+        { id: 'card_status', label: 'Check Card Status', detail: 'Verify if the card is locked or active in app settings.' },
+        { id: 'physical_virtual', label: 'Confirm Card Type', detail: 'Confirm if issue is with Virtual Card or Physical Aven Card.' }
+      ],
+      web: [
+        { id: 'activation_exceeded_web', label: 'Activation Attempts Exceeded', detail: 'Verify card details with CH and reset attempts on the admin portal.' },
+        { id: 'web_portal_access', label: 'Account Dashboard Check', detail: 'Verify if card details load properly on the web portal.' }
+      ]
+    },
+    declined: {
+      app: [
+        { id: 'check_logs', label: 'Check Decline Logs', detail: 'Check Decline Reason in Retool Transaction Tab or Core Card Transaction History.' },
+        { id: 'avs_issue', label: 'AVS Issue', detail: 'Advise CH to input correct zip code.' },
+        { id: 'cvv_mismatch', label: 'CVV Mismatch', detail: 'Advise CH to input correct CVV.' },
+        { id: 'invalid_expiration', label: 'Invalid Expiration', detail: 'Advise CH to input correct expiration date.' },
+        { id: 'invalid_mcc', label: 'Invalid MCC', detail: 'Advise CH of unauthorized merchant category and check MCC Category rules for restricted categories.' },
+        { id: 'suspected_fraud', label: 'Suspected Fraud', detail: 'Verify transaction with CH. If valid, mark as valid and ask CH to retry. Educate CH on fraud alert systems to confirm future charges.' },
+        { id: 'exceeds_daily_limit', label: 'Exceeds Daily Limit', detail: 'Advise CH to respond to ADC alert and retry.' }
+      ],
+      web: [
+        { id: 'check_logs_web', label: 'Check Decline Logs', detail: 'Check Decline Reason in Retool Transaction Tab or Core Card Transaction History.' },
+        { id: 'avs_issue_web', label: 'AVS Issue', detail: 'Advise CH to input correct zip code.' },
+        { id: 'cvv_mismatch_web', label: 'CVV Mismatch', detail: 'Advise CH to input correct CVV.' },
+        { id: 'invalid_expiration_web', label: 'Invalid Expiration', detail: 'Advise CH to input correct expiration date.' },
+        { id: 'invalid_mcc_web', label: 'Invalid MCC', detail: 'Advise CH of unauthorized merchant category and check MCC Category rules for restricted categories.' },
+        { id: 'suspected_fraud_web', label: 'Suspected Fraud', detail: 'Verify transaction with CH. If valid, mark as valid and ask CH to retry. Educate CH on fraud alert systems to confirm future charges.' },
+        { id: 'exceeds_daily_limit_web', label: 'Exceeds Daily Limit', detail: 'Advise CH to respond to ADC alert and retry.' }
+      ]
+    }
+  };
+
+  // --- Auto-Save and Load Functions ---
+  function saveData() {
+    localStorage.setItem('aven_troubleshooter_state', JSON.stringify(currentState));
+  }
+
+  function loadData() {
+    const saved = localStorage.getItem('aven_troubleshooter_state');
+    if (saved) {
+      currentState = JSON.parse(saved);
+      restoreUI();
+    }
+  }
+
+  function restoreUI() {
+    selectIssue(currentState.issue, false);
+    if (currentState.platform) {
+      selectPlatform(currentState.platform, false);
+    }
+  }
+
+  function selectIssue(issueType, clearSteps = true) {
+    currentState.issue = issueType;
+    if (clearSteps) {
+      currentState.platform = null;
+      currentState.steps = {};
+      currentState.escalated = false;
+    }
+    
+    document.getElementById('btn-login').classList.toggle('active', issueType === 'login');
+    document.getElementById('btn-card').classList.toggle('active', issueType === 'card');
+    document.getElementById('btn-declined').classList.toggle('active', issueType === 'declined');
+
+    document.getElementById('btn-app').classList.remove('active');
+    document.getElementById('btn-web').classList.remove('active');
+    
+    document.getElementById('steps-container').innerHTML = '<p style="color: var(--text-muted); font-size: 0.9rem;">Select a platform above to view recommended troubleshooting steps.</p>';
+    
+    saveData();
+    updateNotes();
+  }
+
+  function selectPlatform(platformType, clearSteps = true) {
+    currentState.platform = platformType;
+    if (clearSteps) {
+      currentState.steps = {};
+      currentState.escalated = false;
+    }
+
+    document.getElementById('btn-app').classList.toggle('active', platformType === 'app');
+    document.getElementById('btn-web').classList.toggle('active', platformType === 'web');
+
+    renderSteps();
+    saveData();
+    updateNotes();
+  }
+
+  function renderSteps() {
+    const container = document.getElementById('steps-container');
+    container.innerHTML = '';
+
+    const currentSteps = workflows[currentState.issue][currentState.platform] || [];
+
+    currentSteps.forEach(step => {
+      const isChecked = !!currentState.steps[step.id];
+      const stepDiv = document.createElement('div');
+      stepDiv.className = 'step-card';
+      stepDiv.innerHTML = `
+        <label class="checkbox-container">
+          <input type="checkbox" id="${step.id}" ${isChecked ? 'checked' : ''} onchange="toggleStep('${step.id}', '${step.label}')">
+          <div>
+            <div class="step-text"><strong>${step.label}</strong></div>
+            <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 2px;">${step.detail}</div>
+          </div>
+        </label>
+      `;
+      container.appendChild(stepDiv);
+    });
+
+    const escalationDiv = document.createElement('div');
+    escalationDiv.className = 'step-card escalation-card';
+    escalationDiv.innerHTML = `
+      <label class="checkbox-container">
+        <input type="checkbox" class="escalate-check" id="escalation_check" ${currentState.escalated ? 'checked' : ''} onchange="toggleEscalation()">
+        <div>
+          <div class="step-text" style="color: var(--danger);"><strong>CH Response: Issue Unresolved</strong></div>
+          <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 2px;">Check this if all steps were completed but CH is still unable to complete transaction. Instructs Asana ticket submission.</div>
+        </div>
+      </label>
+    `;
+    container.appendChild(escalationDiv);
+  }
+
+  function toggleStep(stepId, label) {
+    const checkbox = document.getElementById(stepId);
+    if (checkbox.checked) {
+      currentState.steps[stepId] = label;
+    } else {
+      delete currentState.steps[stepId];
+    }
+    saveData();
+    updateNotes();
+  }
+
+  function toggleEscalation() {
+    const checkbox = document.getElementById('escalation_check');
+    currentState.escalated = checkbox.checked;
+    saveData();
+    updateNotes();
+  }
+
+  function updateNotes() {
+    let issueText = 'Unable to Log In';
+    if (currentState.issue === 'card') issueText = 'Card Issue';
+    if (currentState.issue === 'declined') issueText = 'Declined Transactions';
+
+    const platformText = currentState.platform ? currentState.platform.toUpperCase() : 'Not Selected';
+    
+    let completedSteps = Object.values(currentState.steps);
+    let stepsText = completedSteps.length > 0 
+      ? completedSteps.map(s => ` - Completed: ${s}`).join('\n')
+      : ' - No troubleshooting steps completed yet.';
+
+    let nextActionText = 'In Progress';
+    if (currentState.escalated) {
+      nextActionText = 'ESCALATE: All troubleshooting steps completed but transaction issues persist. Submit an Asana ticket for Tier 2 / Payment Operations escalation.';
+    } else if (completedSteps.length > 0) {
+      nextActionText = 'Pending CH Confirmation / Resolved';
+    }
+
+    const noteFormat = `[AVEN SUPPORT TICKET NOTES]
+Issue Type: ${issueText}
+Platform: ${platformText}
+
+Troubleshooting Steps Performed:
+${stepsText}
+
+Next Actions / Escalation:
+${nextActionText}`;
+
+    document.getElementById('ticket-notes').value = noteFormat;
+  }
+
+  function resetForm() {
+    localStorage.removeItem('aven_troubleshooter_state');
+    currentState = { issue: 'login', platform: null, steps: {}, escalated: false };
+    selectIssue('login');
+  }
+
+  function copyNotes() {
+    const textarea = document.getElementById('ticket-notes');
+    textarea.select();
+    document.execCommand('copy');
+    
+    const status = document.getElementById('copy-status');
+    status.textContent = 'Copied to clipboard!';
+    setTimeout(() => { status.textContent = ''; }, 2000);
+  }
+
+  // Load saved state on open
+  loadData();
+</script>
+
+</body>
+</html>
