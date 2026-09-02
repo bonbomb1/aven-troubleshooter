@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Aven Agent Troubleshooting Assistant</title>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
   <style>
     :root {
       --primary: #0F172A;
@@ -135,7 +136,7 @@
 
     textarea {
       width: 100%;
-      height: 270px;
+      height: 250px;
       padding: 12px;
       border: 1px solid var(--border);
       border-radius: 6px;
@@ -147,6 +148,23 @@
       margin-bottom: 12px;
     }
 
+    .btn-resolve {
+      width: 100%;
+      padding: 10px;
+      background: var(--success);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 8px;
+      transition: background 0.2s ease;
+    }
+
+    .btn-resolve.resolved {
+      background: #15803D;
+    }
+
     .btn-copy {
       width: 100%;
       padding: 10px;
@@ -156,7 +174,7 @@
       border-radius: 6px;
       font-weight: 600;
       cursor: pointer;
-      margin-bottom: 6px;
+      margin-bottom: 8px;
     }
 
     .btn-reset {
@@ -170,6 +188,7 @@
       cursor: pointer;
     }
 
+    .btn-resolve:hover { opacity: 0.95; }
     .btn-copy:hover { opacity: 0.9; }
     .btn-reset:hover { background: #F1F5F9; color: var(--text); }
 
@@ -215,8 +234,11 @@
     <h2>Ticket Summary</h2>
     <div class="section-title">Generated Documentation</div>
     <textarea id="ticket-notes" readonly></textarea>
+    
+    <button class="btn-resolve" id="btn-resolve-trigger" onclick="toggleResolve()">🎉 Mark Issue as Resolved</button>
     <button class="btn-copy" onclick="copyNotes()">Copy Notes to Ticket</button>
     <button class="btn-reset" onclick="resetForm()">Clear & Start New Ticket</button>
+    
     <div class="status-msg" id="copy-status"></div>
   </div>
 </div>
@@ -226,7 +248,8 @@
     issue: 'login',
     platform: null,
     steps: {},
-    escalated: false
+    escalated: false,
+    isResolved: false
   };
 
   const workflows = {
@@ -278,7 +301,6 @@
     }
   };
 
-  // --- Auto-Save and Load Functions ---
   function saveData() {
     localStorage.setItem('aven_troubleshooter_state', JSON.stringify(currentState));
   }
@@ -296,6 +318,7 @@
     if (currentState.platform) {
       selectPlatform(currentState.platform, false);
     }
+    updateResolveButton();
   }
 
   function selectIssue(issueType, clearSteps = true) {
@@ -304,6 +327,7 @@
       currentState.platform = null;
       currentState.steps = {};
       currentState.escalated = false;
+      currentState.isResolved = false;
     }
     
     document.getElementById('btn-login').classList.toggle('active', issueType === 'login');
@@ -315,6 +339,7 @@
     
     document.getElementById('steps-container').innerHTML = '<p style="color: var(--text-muted); font-size: 0.9rem;">Select a platform above to view recommended troubleshooting steps.</p>';
     
+    updateResolveButton();
     saveData();
     updateNotes();
   }
@@ -324,12 +349,14 @@
     if (clearSteps) {
       currentState.steps = {};
       currentState.escalated = false;
+      currentState.isResolved = false;
     }
 
     document.getElementById('btn-app').classList.toggle('active', platformType === 'app');
     document.getElementById('btn-web').classList.toggle('active', platformType === 'web');
 
     renderSteps();
+    updateResolveButton();
     saveData();
     updateNotes();
   }
@@ -384,8 +411,45 @@
   function toggleEscalation() {
     const checkbox = document.getElementById('escalation_check');
     currentState.escalated = checkbox.checked;
+    if (currentState.escalated) {
+      currentState.isResolved = false;
+      updateResolveButton();
+    }
     saveData();
     updateNotes();
+  }
+
+  function toggleResolve() {
+    currentState.isResolved = !currentState.isResolved;
+    
+    if (currentState.isResolved) {
+      // Uncheck escalation if resolving
+      currentState.escalated = false;
+      const escalationCheck = document.getElementById('escalation_check');
+      if (escalationCheck) escalationCheck.checked = false;
+
+      // Launch Confetti Burst
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 }
+      });
+    }
+
+    updateResolveButton();
+    saveData();
+    updateNotes();
+  }
+
+  function updateResolveButton() {
+    const btn = document.getElementById('btn-resolve-trigger');
+    if (currentState.isResolved) {
+      btn.textContent = '✅ Issue Marked as Resolved';
+      btn.classList.add('resolved');
+    } else {
+      btn.textContent = '🎉 Mark Issue as Resolved';
+      btn.classList.remove('resolved');
+    }
   }
 
   function updateNotes() {
@@ -401,10 +465,12 @@
       : ' - No troubleshooting steps completed yet.';
 
     let nextActionText = 'In Progress';
-    if (currentState.escalated) {
+    if (currentState.isResolved) {
+      nextActionText = 'RESOLVED: Customer confirmed issue is resolved following troubleshooting.';
+    } else if (currentState.escalated) {
       nextActionText = 'ESCALATE: All troubleshooting steps completed but transaction issues persist. Submit an Asana ticket for Tier 2 / Payment Operations escalation.';
     } else if (completedSteps.length > 0) {
-      nextActionText = 'Pending CH Confirmation / Resolved';
+      nextActionText = 'Pending CH Confirmation / In Progress';
     }
 
     const noteFormat = `[AVEN SUPPORT TICKET NOTES]
@@ -422,7 +488,7 @@ ${nextActionText}`;
 
   function resetForm() {
     localStorage.removeItem('aven_troubleshooter_state');
-    currentState = { issue: 'login', platform: null, steps: {}, escalated: false };
+    currentState = { issue: 'login', platform: null, steps: {}, escalated: false, isResolved: false };
     selectIssue('login');
   }
 
@@ -436,7 +502,6 @@ ${nextActionText}`;
     setTimeout(() => { status.textContent = ''; }, 2000);
   }
 
-  // Load saved state on open
   loadData();
 </script>
 
